@@ -1,0 +1,1619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AZ MEER | Enterprise System Matrix & Operating Platform</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Orbitron:wght@400;500;600;700;800;900&family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Three.js Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <style>
+        /* =========================================================
+           1. CORE SYSTEM VARIABLES & INITIALIZATION
+           ========================================================= */
+        :root {
+            --primary-blue: #0284c7;
+            --primary-blue-glow: rgba(2, 132, 199, 0.4);
+            --accent-cyan: #06b6d4;
+            --accent-cyan-glow: rgba(6, 182, 212, 0.5);
+            --accent-purple: #8b5cf6;
+            --accent-purple-glow: rgba(139, 92, 246, 0.5);
+            --bg-light: #f8fafc;
+            --bg-surface: rgba(255, 255, 255, 0.25);
+            --bg-surface-hover: rgba(255, 255, 255, 0.45);
+            --bg-dark-panel: rgba(15, 23, 42, 0.85);
+            --text-primary: #0f172a;
+            --text-secondary: #334155;
+            --text-muted: #64748b;
+            --border-light: rgba(2, 132, 199, 0.2);
+            --border-glow: rgba(6, 182, 212, 0.4);
+            --font-body: 'Inter', sans-serif;
+            --font-code: 'Fira Code', monospace;
+            --font-heading: 'Orbitron', sans-serif;
+            --transition-fast: 0.2s ease;
+            --transition-normal: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-slow: 0.5s ease-in-out;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background-color: var(--bg-light);
+            color: var(--text-primary);
+            font-family: var(--font-body);
+            line-height: 1.7;
+            overflow-x: hidden;
+            position: relative;
+            width: 100vw;
+        }
+
+        /* 3D WebGL Background Canvas */
+        #canvas-container {
+            height: 100vh;
+            left: 0;
+            pointer-events: none;
+            position: fixed;
+            top: 0;
+            width: 100vw;
+            z-index: -1;
+        }
+
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary-blue);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--accent-cyan);
+        }
+
+        /* Selection Styling */
+        ::selection {
+            background: var(--accent-cyan);
+            color: #0f172a;
+        }
+
+        /* =========================================================
+           2. FLOATING HUD DOCK NAVIGATION CONTROLLER
+           ========================================================= */
+        .hud-dock-container {
+            align-items: center;
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            right: 28px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 9999;
+        }
+
+        .hud-dock {
+            align-items: center;
+            background: var(--bg-dark-panel);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border-light);
+            border-radius: 35px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            padding: 20px 12px;
+            position: relative;
+        }
+
+        .hud-dock::before {
+            background: linear-gradient(180deg, var(--primary-blue), var(--accent-purple));
+            bottom: 25px;
+            content: '';
+            left: 50%;
+            opacity: 0.3;
+            position: absolute;
+            top: 25px;
+            transform: translateX(-50%);
+            width: 2px;
+            z-index: 0;
+        }
+
+        .hud-node {
+            align-items: center;
+            background: rgba(15, 23, 42, 0.95);
+            border: 1px solid var(--border-light);
+            border-radius: 50%;
+            color: var(--text-muted);
+            cursor: pointer;
+            display: flex;
+            font-family: var(--font-code);
+            font-size: 0.85rem;
+            height: 46px;
+            justify-content: center;
+            position: relative;
+            text-decoration: none;
+            transition: all var(--transition-normal);
+            width: 46px;
+            z-index: 1;
+        }
+
+        .hud-node i {
+            font-size: 0.95rem;
+            transition: transform var(--transition-fast);
+        }
+
+        .hud-node:hover {
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 18px var(--accent-cyan-glow);
+            color: #ffffff;
+            transform: scale(1.12);
+        }
+
+        .hud-node:hover i {
+            transform: scale(1.1);
+        }
+
+        .hud-node.active {
+            background: radial-gradient(circle, rgba(139, 92, 246, 0.6) 0%, rgba(15, 23, 42, 1) 100%);
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 22px var(--accent-cyan-glow);
+            color: #ffffff;
+            transform: scale(1.18);
+        }
+
+        .hud-node.active::after {
+            animation: hud-pulse 2s infinite;
+            border: 1px solid var(--accent-cyan);
+            border-radius: 50%;
+            content: '';
+            height: 100%;
+            position: absolute;
+            width: 100%;
+        }
+
+        @keyframes hud-pulse {
+            0% { opacity: 0.8; transform: scale(1); }
+            100% { opacity: 0; transform: scale(1.6); }
+        }
+
+        .hud-tooltip {
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(8px);
+            border: 1px solid var(--border-glow);
+            border-radius: 6px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
+            color: #ffffff;
+            font-family: var(--font-code);
+            font-size: 0.75rem;
+            font-weight: 600;
+            opacity: 0;
+            padding: 6px 14px;
+            pointer-events: none;
+            position: absolute;
+            right: 62px;
+            text-transform: uppercase;
+            top: 50%;
+            transform: translateY(-50%) translateX(10px);
+            transition: all var(--transition-normal);
+            white-space: nowrap;
+        }
+
+        .hud-node:hover .hud-tooltip {
+            opacity: 1;
+            transform: translateY(-50%) translateX(0);
+        }
+
+        /* =========================================================
+           3. HERO COMMAND CENTER SECTION
+           ========================================================= */
+        .hero {
+            align-items: center;
+            display: flex;
+            flex-direction: row;
+            gap: 4rem;
+            justify-content: space-between;
+            min-height: 100vh;
+            padding: 4rem 8%;
+            position: relative;
+        }
+
+        .hero-left-details {
+            align-items: flex-start;
+            display: flex;
+            flex-direction: column;
+            max-width: 58%;
+        }
+
+        .badge {
+            align-items: center;
+            background: rgba(2, 132, 199, 0.08);
+            border: 1px solid var(--border-light);
+            border-radius: 4px;
+            color: var(--primary-blue);
+            display: inline-flex;
+            font-family: var(--font-code);
+            font-size: 0.82rem;
+            font-weight: 600;
+            gap: 0.6rem;
+            margin-bottom: 1.2rem;
+            padding: 0.4rem 1.2rem;
+            text-transform: uppercase;
+        }
+
+        .badge i {
+            color: var(--accent-cyan);
+        }
+
+        .hero h1 {
+            font-family: var(--font-heading);
+            font-size: 3.6rem;
+            line-height: 1.15;
+            margin-bottom: 1.2rem;
+            text-align: left;
+        }
+
+        .hero h1 .gradient-text {
+            background: linear-gradient(135deg, var(--primary-blue), var(--accent-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero-description {
+            color: var(--text-secondary);
+            font-size: 1.15rem;
+            margin-bottom: 2.2rem;
+            text-align: left;
+        }
+
+        .hero-right-image {
+            align-items: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            position: relative;
+            width: 38%;
+        }
+
+        .hero-avatar-img {
+            border: 1px solid var(--border-light);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            filter: contrast(105%);
+            height: 480px;
+            object-fit: cover;
+            transition: transform var(--transition-slow);
+            width: 100%;
+            max-width: 420px;
+        }
+
+        .hero-avatar-img:hover {
+            transform: scale(1.02);
+        }
+
+        .avatar-label {
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border-glow);
+            color: var(--primary-blue);
+            font-family: var(--font-code);
+            font-size: 0.82rem;
+            font-weight: 600;
+            margin-top: -20px;
+            padding: 0.6rem 1.4rem;
+            position: relative;
+            white-space: nowrap;
+            z-index: 10;
+        }
+
+        .btn-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            justify-content: flex-start;
+        }
+
+        .btn {
+            align-items: center;
+            cursor: pointer;
+            display: inline-flex;
+            font-family: var(--font-code);
+            font-size: 0.88rem;
+            gap: 0.6rem;
+            padding: 0.9rem 2rem;
+            text-decoration: none;
+            transition: all var(--transition-normal);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-blue), var(--accent-cyan));
+            border: none;
+            color: #ffffff;
+            font-weight: 600;
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 8px 20px var(--accent-cyan-glow);
+            opacity: 0.95;
+            transform: translateY(-2px);
+        }
+
+        .btn-outline {
+            background: rgba(255, 255, 255, 0.6);
+            border: 1px solid var(--border-light);
+            color: var(--primary-blue);
+            font-weight: 600;
+        }
+
+        .btn-outline:hover {
+            background: rgba(2, 132, 199, 0.08);
+            border-color: var(--primary-blue);
+            transform: translateY(-2px);
+        }
+
+        /* =========================================================
+           4. COMMON SECTION LAYOUT & CARDS
+           ========================================================= */
+        section {
+            margin: 0 auto;
+            max-width: 1400px;
+            padding: 6rem 4% 3rem 4%;
+        }
+
+        .section-title {
+            align-items: center;
+            color: var(--text-primary);
+            display: flex;
+            font-family: var(--font-heading);
+            font-size: 2.2rem;
+            gap: 1rem;
+            letter-spacing: 1px;
+            margin-bottom: 3.5rem;
+            text-transform: uppercase;
+        }
+
+        .section-title::after {
+            background: linear-gradient(90deg, var(--primary-blue), transparent);
+            content: '';
+            flex-grow: 1;
+            height: 1px;
+        }
+
+        .full-stack-list {
+            display: flex;
+            flex-direction: column;
+            gap: 3.5rem;
+            width: 100%;
+        }
+
+        .pro-card {
+            align-items: center;
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            background: var(--bg-surface);
+            border: 1px solid rgba(2, 132, 199, 0.12);
+            display: flex;
+            flex-direction: row;
+            gap: 3.5rem;
+            justify-content: space-between;
+            min-height: 480px;
+            padding: 3.5rem 3rem;
+            position: relative;
+            transition: all var(--transition-normal);
+            width: 100%;
+        }
+
+        .pro-card:hover {
+            background: var(--bg-surface-hover);
+            border-color: var(--border-glow);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.05);
+        }
+
+        .card-preview-left {
+            align-items: center;
+            background: rgba(2, 132, 199, 0.04);
+            border-right: 2px solid var(--border-light);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            justify-content: center;
+            min-height: 380px;
+            padding: 1.5rem;
+            position: relative;
+            width: 40%;
+        }
+
+        .card-real-img {
+            border: 1px solid var(--border-light);
+            height: 280px;
+            object-fit: cover;
+            width: 100%;
+        }
+
+        .card-index-tag {
+            color: var(--text-muted);
+            font-family: var(--font-code);
+            font-size: 0.85rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            margin-top: 1.2rem;
+            text-transform: uppercase;
+        }
+
+        .left-metric-list {
+            border-top: 1px dashed var(--border-light);
+            margin-top: 1.2rem;
+            padding-top: 1rem;
+            width: 100%;
+        }
+
+        .metric-row {
+            display: flex;
+            font-family: var(--font-code);
+            font-size: 0.8rem;
+            justify-content: space-between;
+            margin-bottom: 0.4rem;
+        }
+
+        .metric-row .val {
+            color: var(--primary-blue);
+            font-weight: 600;
+        }
+
+        .card-content-right {
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+            justify-content: center;
+        }
+
+        .card-title {
+            color: var(--text-primary);
+            font-family: var(--font-heading);
+            font-size: 2rem;
+            margin-bottom: 0.4rem;
+        }
+
+        .card-subtitle {
+            color: var(--accent-purple);
+            font-family: var(--font-code);
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+        }
+
+        .card-body {
+            color: var(--text-secondary);
+            font-size: 1.05rem;
+            margin-bottom: 1.8rem;
+        }
+
+        .card-body p {
+            margin-bottom: 1rem;
+        }
+
+        .card-body ul {
+            list-style: none;
+            margin-top: 1rem;
+        }
+
+        .card-body ul li {
+            font-size: 0.98rem;
+            margin-bottom: 0.8rem;
+            padding-left: 1.5rem;
+            position: relative;
+        }
+
+        .card-body ul li::before {
+            color: var(--primary-blue);
+            content: '>';
+            font-family: var(--font-code);
+            font-weight: bold;
+            left: 0;
+            position: absolute;
+        }
+
+        .card-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.6rem;
+            margin-top: 1.5rem;
+        }
+
+        .tag {
+            background: rgba(2, 132, 199, 0.08);
+            border: 1px solid var(--border-light);
+            color: var(--primary-blue);
+            font-family: var(--font-code);
+            font-size: 0.8rem;
+            font-weight: 600;
+            padding: 0.35rem 0.85rem;
+        }
+
+        /* =========================================================
+           5. ACADEMIC TIMELINE STYLING
+           ========================================================= */
+        .timeline-container {
+            border-left: 2px solid var(--primary-blue);
+            margin-left: 1rem;
+            padding-left: 2.5rem;
+        }
+
+        .timeline-node {
+            margin-bottom: 3.5rem;
+            position: relative;
+        }
+
+        .timeline-node::before {
+            background: var(--primary-blue);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--primary-blue-glow);
+            content: '';
+            height: 16px;
+            left: -3.05rem;
+            position: absolute;
+            top: 0.35rem;
+            width: 16px;
+        }
+
+        .timeline-date {
+            color: var(--primary-blue);
+            font-family: var(--font-code);
+            font-size: 0.88rem;
+            font-weight: 700;
+            margin-bottom: 0.4rem;
+        }
+
+        /* =========================================================
+           6. GITHUB REPOSITORIES & APP GRID MATRIX
+           ========================================================= */
+        .grid-matrix {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            gap: 2rem;
+            width: 100%;
+        }
+
+        .matrix-card {
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            background: var(--bg-surface);
+            border: 1px solid var(--border-light);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 2rem;
+            transition: all var(--transition-normal);
+
+        }
+
+        .matrix-card:hover {
+            background: var(--bg-surface-hover);
+            border-color: var(--accent-cyan);
+            transform: translateY(-4px);
+        }
+
+        .matrix-header {
+            align-items: center;
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .matrix-header i {
+            color: var(--primary-blue);
+            font-size: 1.8rem;
+        }
+
+        .matrix-title {
+            font-family: var(--font-heading);
+            font-size: 1.3rem;
+        }
+
+        .matrix-desc {
+            color: var(--text-secondary);
+            font-size: 0.98rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .matrix-meta {
+            border-top: 1px dashed var(--border-light);
+            display: flex;
+            justify-content: space-between;
+            padding-top: 1rem;
+            font-family: var(--font-code);
+            font-size: 0.82rem;
+            color: var(--text-muted);
+        }
+
+        /* =========================================================
+           7. SOCIAL & NETWORK CARDS
+           ========================================================= */
+        .social-card {
+            align-items: center;
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            background: var(--bg-surface);
+            border: 1px solid var(--border-light);
+            color: var(--text-primary);
+            display: flex;
+            flex-direction: row;
+            gap: 3.5rem;
+            justify-content: space-between;
+            min-height: 200px;
+            padding: 2.5rem 3rem;
+            text-decoration: none;
+            transition: all var(--transition-normal);
+            width: 100%;
+        }
+
+        .social-card:hover {
+            background: var(--bg-surface-hover);
+            border-color: var(--accent-cyan);
+            transform: translateY(-4px);
+        }
+
+        .social-left {
+            align-items: center;
+            background: rgba(2, 132, 199, 0.04);
+            border-right: 2px solid var(--border-light);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            min-height: 180px;
+            padding: 1rem;
+            width: 32%;
+        }
+
+        .social-real-img {
+            height: 160px;
+            object-fit: cover;
+            width: 100%;
+        }
+
+        .social-right {
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+            justify-content: center;
+        }
+
+        .social-header {
+            align-items: center;
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .social-header i {
+            color: var(--primary-blue);
+            font-size: 1.8rem;
+        }
+
+        .social-right strong {
+            font-family: var(--font-heading);
+            font-size: 1.8rem;
+        }
+
+        .social-right span {
+            color: var(--accent-purple);
+            font-family: var(--font-code);
+            font-size: 1rem;
+            margin-bottom: 0.8rem;
+        }
+
+        .social-desc {
+            color: var(--text-secondary);
+            font-size: 1rem;
+            line-height: 1.7;
+        }
+
+        /* =========================================================
+           8. INTERACTIVE CLI TERMINAL SIMULATOR
+           ========================================================= */
+        .terminal-container {
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border-glow);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+            color: #38bdf8;
+            font-family: var(--font-code);
+            margin-top: 2rem;
+            padding: 2rem;
+            width: 100%;
+        }
+
+        .terminal-header {
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+        }
+
+        .terminal-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .t-btn {
+            border-radius: 50%;
+            height: 12px;
+            width: 12px;
+        }
+
+        .t-red { background: #ef4444; }
+        .t-yellow { background: #f59e0b; }
+        .t-green { background: #10b981; }
+
+        .terminal-title {
+            color: var(--text-muted);
+            font-size: 0.82rem;
+        }
+
+        .terminal-body {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .terminal-output {
+            color: #f8fafc;
+            font-size: 0.95rem;
+            white-space: pre-wrap;
+        }
+
+        .terminal-input-line {
+            align-items: center;
+            display: flex;
+            gap: 0.8rem;
+        }
+
+        .terminal-prompt {
+            color: var(--accent-cyan);
+            font-weight: 700;
+        }
+
+        .terminal-input {
+            background: transparent;
+            border: none;
+            color: #ffffff;
+            font-family: var(--font-code);
+            font-size: 1rem;
+            outline: none;
+            width: 100%;
+        }
+
+        /* =========================================================
+           9. FOOTER & MEDIA QUERIES
+           ========================================================= */
+        footer {
+            background: transparent;
+            border-top: 1px solid rgba(226, 232, 240, 0.6);
+            color: var(--text-muted);
+            font-family: var(--font-code);
+            font-size: 0.85rem;
+            padding: 3.5rem 1rem;
+            text-align: center;
+        }
+
+        @media (max-width: 1024px) {
+            .hud-dock-container {
+                right: 12px;
+            }
+            .hud-node {
+                height: 38px;
+                width: 38px;
+            }
+            .hud-tooltip {
+                display: none;
+            }
+            .hero {
+                flex-direction: column-reverse;
+                gap: 2rem;
+                padding-top: 3rem;
+            }
+            .hero-left-details, .hero-right-image {
+                max-width: 100%;
+                width: 100%;
+            }
+            .pro-card, .social-card {
+                flex-direction: column;
+                min-height: auto;
+                padding: 2.5rem 1.5rem;
+            }
+            .card-preview-left, .social-left {
+                border-bottom: 2px solid var(--border-light);
+                border-right: none;
+                min-height: 250px;
+                width: 100%;
+            }
+            .grid-matrix {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div id="canvas-container"></div>
+
+<!-- FLOATING HUD DOCK NAVIGATION -->
+<nav class="hud-dock-container">
+    <div class="hud-dock">
+        <a href="#hero" class="hud-node active" data-section="hero">
+            <i class="fa-solid fa-terminal"></i>
+            <span class="hud-tooltip">Command Center</span>
+        </a>
+        <a href="#about" class="hud-node" data-section="about">
+            <i class="fa-solid fa-microchip"></i>
+            <span class="hud-tooltip">Corporate Matrix</span>
+        </a>
+        <a href="#studies" class="hud-node" data-section="studies">
+            <i class="fa-solid fa-graduation-cap"></i>
+            <span class="hud-tooltip">Academic Track</span>
+        </a>
+        <a href="#repos" class="hud-node" data-section="repos">
+            <i class="fa-solid fa-code-branch"></i>
+            <span class="hud-tooltip">GitHub Repos</span>
+        </a>
+        <a href="#apps" class="hud-node" data-section="apps">
+            <i class="fa-brands fa-google-play"></i>
+            <span class="hud-tooltip">Live App Deployments</span>
+        </a>
+        <a href="#socials" class="hud-node" data-section="socials">
+            <i class="fa-solid fa-network-wired"></i>
+            <span class="hud-tooltip">Social Matrix</span>
+        </a>
+        <a href="#cli" class="hud-node" data-section="cli">
+            <i class="fa-solid fa-code"></i>
+            <span class="hud-tooltip">CLI Terminal</span>
+        </a>
+    </div>
+</nav>
+
+<main>
+    <!-- SECTION 0: HERO COMMAND CENTER -->
+    <section class="hero" id="hero">
+        <div class="hero-left-details">
+            <div class="badge"><i class="fa-solid fa-shield-halved"></i> Corporate CEO & Lead Mobile Architect</div>
+            <h1>AZ MEER <br><span class="gradient-text">Master Capabilities & Systems</span></h1>
+            <p class="hero-description">Founder & Chief Executive Officer of <strong>AZ MEER (SMC-PRIVATE) LIMITED</strong> (AzMeer Groups). Cross-platform Flutter & Android mobile engineer, serverless architect, desktop automation developer, and AI integration specialist.</p>
+            <div class="btn-group">
+                <a href="#about" class="btn btn-primary"><i class="fa-solid fa-cubes"></i> Explore Systems Matrix</a>
+                <a href="#apps" class="btn btn-outline"><i class="fa-brands fa-google-play"></i> View Play Store Apps</a>
+            </div>
+        </div>
+
+        <div class="hero-right-image">
+            <img src="https://github.com/abdulbasit26Z1.png" alt="AZ MEER Avatar" class="hero-avatar-img" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80';">
+            <div class="avatar-label"><i class="fa-solid fa-circle-check"></i> Founder & CEO | @abdulbasit26Z1</div>
+        </div>
+    </section>
+
+    <!-- SECTION 1: CORPORATE MATRIX -->
+    <section id="about">
+        <h2 class="section-title">01. Corporate Legal & Executive Matrix</h2>
+        <div class="full-stack-list">
+
+            <div class="pro-card">
+                <div class="card-preview-left">
+                    <img src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=800&q=80" alt="Corporate Legal Structure" class="card-real-img">
+                    <div class="card-index-tag">MODULE 01 // LEGAL</div>
+                    <div class="left-metric-list">
+                        <div class="metric-row"><span>REG ID:</span> <span class="val">20260310_4609622</span></div>
+                        <div class="metric-row"><span>STATUS:</span> <span class="val">REGISTERED</span></div>
+                    </div>
+                </div>
+                <div class="card-content-right">
+                    <div class="card-title">01. Corporate Legal Entity</div>
+                    <div class="card-subtitle">AZ MEER (SMC-PRIVATE) LIMITED</div>
+                    <div class="card-body">
+                        <p>Duly incorporated corporate enterprise operating under regulatory oversight of the Securities and Exchange Commission of Pakistan (SECP) and Federal Board of Revenue (FBR).</p>
+                        <ul>
+                            <li>Functions as the primary corporate parent entity for all software engineering and monetization platforms.</li>
+                            <li>Engineered to manage enterprise software rights, mobile assets, and client consulting protocols.</li>
+                            <li>Compliant single-member corporate structure executing operations across local and international sectors.</li>
+                        </ul>
+                    </div>
+                    <div class="card-tags">
+                        <span class="tag">SECP Registered</span>
+                        <span class="tag">FBR Tax Verified</span>
+                        <span class="tag">Corporate Entity</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pro-card">
+                <div class="card-preview-left">
+                    <img src="https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=800&q=80" alt="Trade Name" class="card-real-img">
+                    <div class="card-index-tag">MODULE 02 // BRAND</div>
+                    <div class="left-metric-list">
+                        <div class="metric-row"><span>TRADE MARK:</span> <span class="val">AZMEER GROUPS</span></div>
+                        <div class="metric-row"><span>DOMAINS:</span> <span class="val">MULTIPLATED</span></div>
+                    </div>
+                </div>
+                <div class="card-content-right">
+                    <div class="card-title">02. Trade Name & Commercial Framework</div>
+                    <div class="card-subtitle">AzMeer Groups</div>
+                    <div class="card-body">
+                        <p>The umbrella commercial brand managing mobile software product suites, client services, and multi-channel content networks.</p>
+                        <ul>
+                            <li>Unifies freelance mobile services, enterprise web integrations, and custom automation scripts.</li>
+                            <li>Maintains modern, high-contrast, edge-to-edge tech aesthetics across all customer touchpoints.</li>
+                            <li>Protects visual intellectual property including VectorDrawable XML codebases and custom visual themes.</li>
+                        </ul>
+                    </div>
+                    <div class="card-tags">
+                        <span class="tag">Commercial Brand</span>
+                        <span class="tag">AzMeer Groups</span>
+                        <span class="tag">UI/UX Assets</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pro-card">
+                <div class="card-preview-left">
+                    <img src="https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=800&q=80" alt="Executive Direction" class="card-real-img">
+                    <div class="card-index-tag">MODULE 03 // LEADERSHIP</div>
+                    <div class="left-metric-list">
+                        <div class="metric-row"><span>DESIG:</span> <span class="val">FOUNDER / CEO</span></div>
+                        <div class="metric-row"><span>SCOPE:</span> <span class="val">SYSTEMS ARCHITECT</span></div>
+                    </div>
+                </div>
+                <div class="card-content-right">
+                    <div class="card-title">03. Executive Leadership & Strategy</div>
+                    <div class="card-subtitle">Founder & Chief Executive Officer</div>
+                    <div class="card-body">
+                        <p>Oversees technical execution, system architecture, monetization strategy, and software operations across all divisions.</p>
+                        <ul>
+                            <li>Directly engineers core cross-platform mobile products using Flutter, Java, Kotlin, and Dart.</li>
+                            <li>Formulates technical performance standards, eliminating frame drops and UI latency.</li>
+                            <li>Leads strategic automated workflow integrations connecting local IDEs with serverless clouds.</li>
+                        </ul>
+                    </div>
+                    <div class="card-tags">
+                        <span class="tag">Executive Director</span>
+                        <span class="tag">Chief Architect</span>
+                        <span class="tag">Strategy Lead</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pro-card">
+                <div class="card-preview-left">
+                    <img src="https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?auto=format&fit=crop&w=800&q=80" alt="Securities Deposit" class="card-real-img">
+                    <div class="card-index-tag">MODULE 04 // EQUITIES</div>
+                    <div class="left-metric-list">
+                        <div class="metric-row"><span>DEPOSIT:</span> <span class="val">CDC PAKISTAN</span></div>
+                        <div class="metric-row"><span>CREDIT:</span> <span class="val">VERIFIED</span></div>
+                    </div>
+                </div>
+                <div class="card-content-right">
+                    <div class="card-title">04. Securities & Share Allotment Tracking</div>
+                    <div class="card-subtitle">CDC Pakistan Registered Securities</div>
+                    <div class="card-body">
+                        <p>Complete electronic share allotment tracking and corporate credit monitoring verified through Central Depository Company of Pakistan Limited.</p>
+                        <ul>
+                            <li>Maintains formal electronic record tracking for corporate share capital and ordinary enterprise stock.</li>
+                            <li>Ensures structural compliance with institutional financial transparency requirements.</li>
+                            <li>Facilitates future equity distribution and corporate investment onboarding protocols.</li>
+                        </ul>
+                    </div>
+                    <div class="card-tags">
+                        <span class="tag">CDC Pakistan</span>
+                        <span class="tag">Share Allotment</span>
+                        <span class="tag">Corporate Equity</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- SECTION 2: ACADEMIC JOURNEY -->
+    <section id="studies">
+        <h2 class="section-title">02. Academic Journey (Zero Grade to University)</h2>
+        <div class="timeline-container">
+            <div class="timeline-node">
+                <div class="timeline-date">FOUNDATIONAL YEARS (ZERO GRADE TO PRIMARY)</div>
+                <h3 class="card-title">Primary & Middle School Education</h3>
+                <div class="card-subtitle">Early Schooling Track</div>
+                <p class="card-body">Built core analytical thinking, mathematics skills, and fundamental computer literacy. Developed an early passion for technology, hardware logic, and basic script editing.</p>
+            </div>
+
+            <div class="timeline-node">
+                <div class="timeline-date">SECONDARY SCHOOL (MATRICULATION)</div>
+                <h3 class="card-title">Matriculation in Computer Science</h3>
+                <div class="card-subtitle">Science & Technological Stream</div>
+                <p class="card-body">Completed secondary education focusing on Physics, Chemistry, Higher Mathematics, and Computer Science fundamentals, establishing core logic structures for software creation.</p>
+            </div>
+
+            <div class="timeline-node">
+                <div class="timeline-date">HIGHER SECONDARY (INTERMEDIATE)</div>
+                <h3 class="card-title">ICS (Intermediate in Computer Science)</h3>
+                <div class="card-subtitle">College Level Computer Science</div>
+                <p class="card-body">Specialized in C++ programming logic, database concepts, basic web development, object-oriented concepts, and computational logic design.</p>
+            </div>
+
+            <div class="timeline-node">
+                <div class="timeline-date">CURRENT UNIVERSITY DEGREE (4th SEMESTER)</div>
+                <h3 class="card-title">BSIT (Bachelor of Science in Information Technology)</h3>
+                <div class="card-subtitle">Superior University — Lahore, Pakistan</div>
+                <p class="card-body">Currently excelling in the 4th Semester. Advanced coursework includes Data Structures, Object-Oriented Software Engineering, Mobile App Paradigm Development, Database Systems, and Automated IDE Build Tools.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 3: GITHUB CODE REPOSITORIES -->
+    <section id="repos">
+        <h2 class="section-title">03. GitHub Repository Architecture (`abdulbasit26Z1`)</h2>
+        <div class="grid-matrix">
+
+            <a href="https://github.com/abdulbasit26Z1/abdulbasit26Z1.github.io" target="_blank" style="text-decoration:none;" class="matrix-card">
+                <div>
+                    <div class="matrix-header">
+                        <i class="fa-solid fa-globe"></i>
+                        <div class="matrix-title">abdulbasit26Z1.github.io</div>
+                    </div>
+                    <div class="matrix-desc">Primary root repository hosting the live enterprise website matrix, glassmorphic UI templates, and serverless hosting scripts.</div>
+                </div>
+                <div class="matrix-meta">
+                    <span>HTML / CSS / JS</span>
+                    <span>Serverless Pages</span>
+                </div>
+            </a>
+
+            <a href="https://github.com/abdulbasit26Z1/TeamAbhPk" target="_blank" style="text-decoration:none;" class="matrix-card">
+                <div>
+                    <div class="matrix-header">
+                        <i class="fa-solid fa-users-gear"></i>
+                        <div class="matrix-title">TeamAbhPk</div>
+                    </div>
+                    <div class="matrix-desc">Collaborative team development repository for shared enterprise tools, utility scripts, and modular components.</div>
+                </div>
+                <div class="matrix-meta">
+                    <span>Collaborative Code</span>
+                    <span>Utilities</span>
+                </div>
+            </a>
+
+            <a href="https://github.com/abdulbasit26Z1/signal" target="_blank" style="text-decoration:none;" class="matrix-card">
+                <div>
+                    <div class="matrix-header">
+                        <i class="fa-solid fa-chart-line"></i>
+                        <div class="matrix-title">signal</div>
+                    </div>
+                    <div class="matrix-desc">Trading signal distribution and market data processing module built with TypeScript for rapid analysis.</div>
+                </div>
+                <div class="matrix-meta">
+                    <span>TypeScript</span>
+                    <span>Financial Logic</span>
+                </div>
+            </a>
+
+            <a href="https://github.com/abdulbasit26Z1/ringcalculator" target="_blank" style="text-decoration:none;" class="matrix-card">
+                <div>
+                    <div class="matrix-header">
+                        <i class="fa-solid fa-calculator"></i>
+                        <div class="matrix-title">ringcalculator</div>
+                    </div>
+                    <div class="matrix-desc">Web and calculation utility engineered for dimension computations, geometric parameters, and custom formulas.</div>
+                </div>
+                <div class="matrix-meta">
+                    <span>Web Utility</span>
+                    <span>Algorithms</span>
+                </div>
+            </a>
+
+            <a href="https://github.com/abdulbasit26Z1/calculatortyx" target="_blank" style="text-decoration:none;" class="matrix-card">
+                <div>
+                    <div class="matrix-header">
+                        <i class="fa-solid fa-square-root-variable"></i>
+                        <div class="matrix-title">calculatortyx</div>
+                    </div>
+                    <div class="matrix-desc">Specialized calculation suite managing custom mathematical formulas and interactive user inputs.</div>
+                </div>
+                <div class="matrix-meta">
+                    <span>Utility Engine</span>
+                    <span>Math Suite</span>
+                </div>
+            </a>
+
+            <a href="https://github.com/abdulbasit26Z1/calculator" target="_blank" style="text-decoration:none;" class="matrix-card">
+                <div>
+                    <div class="matrix-header">
+                        <i class="fa-solid fa-calculator"></i>
+                        <div class="matrix-title">calculator</div>
+                    </div>
+                    <div class="matrix-desc">Clean, high-performance calculator application designed for rapid operations and fluid interface rendering.</div>
+                </div>
+                <div class="matrix-meta">
+                    <span>Cross-Platform</span>
+                    <span>UI Design</span>
+                </div>
+            </a>
+
+        </div>
+    </section>
+
+    <!-- SECTION 4: GOOGLE PLAY STORE DEPLOYMENTS -->
+    <section id="apps">
+        <h2 class="section-title">04. Live Google Play Store Deployments</h2>
+        <div class="full-stack-list">
+
+            <!-- Grozy Mart App -->
+            <div class="pro-card">
+                <div class="card-preview-left">
+                    <img src="https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=800&q=80" alt="Grozy Mart App" class="card-real-img">
+                    <div class="card-index-tag">PLAY STORE // E-COMMERCE</div>
+                    <div class="left-metric-list">
+                        <div class="metric-row"><span>PACKAGE:</span> <span class="val">com.grozymart</span></div>
+                        <div class="metric-row"><span>STATUS:</span> <span class="val">LIVE ON PLAY STORE</span></div>
+                    </div>
+                </div>
+                <div class="card-content-right">
+                    <div class="card-title">Grozy Mart — E-Commerce Platform</div>
+                    <div class="card-subtitle">Package ID: com.grozymart</div>
+                    <div class="card-body">
+                        <p>Complete e-commerce and grocery shopping solution designed for effortless browsing, secure ordering, and real-time delivery tracking.</p>
+                        <ul>
+                            <li><strong>Product Catalog & Search:</strong> Category exploration, search, detailed product info, and transparent pricing.</li>
+                            <li><strong>Cart & Streamlined Checkout:</strong> Single-tap cart management, address saving, and secure checkout.</li>
+                            <li><strong>Real-Time Order Tracking:</strong> Live status updates from "Processing" to "Out for Delivery" and "Completed".</li>
+                            <li><strong>Account Management:</strong> Personalized profiles and order history for re-ordering.</li>
+                        </ul>
+                    </div>
+                    <div class="card-tags">
+                        <span class="tag">Google Play Live</span>
+                        <span class="tag">E-Commerce</span>
+                        <span class="tag">Real-Time Tracking</span>
+                        <span class="tag">com.grozymart</span>
+                    </div>
+                    <div style="margin-top: 1.5rem;">
+                        <a href="https://play.google.com/store/apps/details?id=com.grozymart" target="_blank" class="btn btn-primary"><i class="fa-brands fa-google-play"></i> Open Grozy Mart on Play Store</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Developer Profile Console -->
+            <div class="pro-card">
+                <div class="card-preview-left">
+                    <img src="https://images.unsplash.com/photo-1607252650355-f7fd0460ccdb?auto=format&fit=crop&w=800&q=80" alt="Developer Console" class="card-real-img">
+                    <div class="card-index-tag">DEVELOPER // PUBLISHER</div>
+                    <div class="left-metric-list">
+                        <div class="metric-row"><span>DEV ID:</span> <span class="val">7792521008004964438</span></div>
+                        <div class="metric-row"><span>MONETIZATION:</span> <span class="val">ADMOB VERIFIED</span></div>
+                    </div>
+                </div>
+                <div class="card-content-right">
+                    <div class="card-title">Google Play Developer Console Suite</div>
+                    <div class="card-subtitle">Publisher Console & Application Portfolio</div>
+                    <div class="card-body">
+                        <p>Master Google Play Console publisher profile deploying single-feature utilities, AI assistants, and high-performance apps.</p>
+                        <ul>
+                            <li><strong>Integrated AdMob Monetization:</strong> Optimized ad requests, transparent seller configuration, and live ad inspection.</li>
+                            <li><strong>60 FPS Performance Tuning:</strong> Codebase configurations tuned to eliminate frame drops and UI latency.</li>
+                            <li><strong>Serverless AI Utilities:</strong> Seamless API bindings for instant user responses and smart automated tools.</li>
+                        </ul>
+                    </div>
+                    <div class="card-tags">
+                        <span class="tag">Developer Profile</span>
+                        <span class="tag">AdMob Monetized</span>
+                        <span class="tag">Flutter / Native</span>
+                    </div>
+                    <div style="margin-top: 1.5rem;">
+                        <a href="https://play.google.com/store/apps/dev?id=7792521008004964438" target="_blank" class="btn btn-outline"><i class="fa-brands fa-google-play"></i> View Publisher Account on Play Store</a>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- SECTION 5: COMPLETE SOCIAL MEDIA NETWORKS -->
+    <section id="socials">
+        <h2 class="section-title">05. Complete Social Media & Network Matrix</h2>
+        <div class="full-stack-list">
+
+            <a href="https://github.com/abdulbasit26Z1" target="_blank" class="social-card">
+                <div class="social-left">
+                    <img src="https://images.unsplash.com/photo-1618401471353-b98afee0b2eb?auto=format&fit=crop&w=800&q=80" alt="GitHub Profile" class="social-real-img">
+                </div>
+                <div class="social-right">
+                    <div class="social-header">
+                        <i class="fa-brands fa-github"></i>
+                        <strong>GitHub Profile</strong>
+                    </div>
+                    <span>@abdulbasit26Z1</span>
+                    <div class="social-desc">Primary cloud code repository housing public source code, Flutter projects, Android Studio configurations, and serverless hosting scripts.</div>
+                </div>
+            </a>
+
+            <a href="https://play.google.com/store/apps/dev?id=7792521008004964438" target="_blank" class="social-card">
+                <div class="social-left">
+                    <img src="https://images.unsplash.com/photo-1607252650355-f7fd0460ccdb?auto=format&fit=crop&w=800&q=80" alt="Google Play Store" class="social-real-img">
+                </div>
+                <div class="social-right">
+                    <div class="social-header">
+                        <i class="fa-brands fa-google-play"></i>
+                        <strong>Google Play Developer Account</strong>
+                    </div>
+                    <span>Publisher ID: 7792521008004964438</span>
+                    <div class="social-desc">Official Android app store publisher portal housing production releases, including Grozy Mart and specialized utility applications.</div>
+                </div>
+            </a>
+
+            <a href="https://linkedin.com" target="_blank" class="social-card">
+                <div class="social-left">
+                    <img src="https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=800&q=80" alt="LinkedIn" class="social-real-img">
+                </div>
+                <div class="social-right">
+                    <div class="social-header">
+                        <i class="fa-brands fa-linkedin"></i>
+                        <strong>LinkedIn Professional Network</strong>
+                    </div>
+                    <span>AZ MEER (SMC-PRIVATE) LIMITED</span>
+                    <div class="social-desc">Official corporate presence highlighting enterprise milestones, SECP compliance, executive leadership, and technical engineering articles.</div>
+                </div>
+            </a>
+
+            <a href="https://x.com" target="_blank" class="social-card">
+                <div class="social-left">
+                    <img src="https://images.unsplash.com/photo-1611605698335-8b1569810432?auto=format&fit=crop&w=800&q=80" alt="X Twitter" class="social-real-img">
+                </div>
+                <div class="social-right">
+                    <div class="social-header">
+                        <i class="fa-brands fa-x-twitter"></i>
+                        <strong>X (Formerly Twitter)</strong>
+                    </div>
+                    <span>@AzMeerGroups</span>
+                    <div class="social-desc">Real-time updates on app development, technical insights, market trends, and corporate announcements for AzMeer Groups.</div>
+                </div>
+            </a>
+
+            <a href="https://facebook.com" target="_blank" class="social-card">
+                <div class="social-left">
+                    <img src="https://images.unsplash.com/photo-1563986768609-322da13575f3?auto=format&fit=crop&w=800&q=80" alt="Facebook" class="social-real-img">
+                </div>
+                <div class="social-right">
+                    <div class="social-header">
+                        <i class="fa-brands fa-facebook"></i>
+                        <strong>Facebook Page & Community</strong>
+                    </div>
+                    <span>AzMeer Groups Official</span>
+                    <div class="social-desc">Community engagement portal sharing enterprise product showcases, client updates, and technical app releases.</div>
+                </div>
+            </a>
+
+            <a href="https://instagram.com" target="_blank" class="social-card">
+                <div class="social-left">
+                    <img src="https://images.unsplash.com/photo-1611262588024-d12430b98920?auto=format&fit=crop&w=800&q=80" alt="Instagram" class="social-real-img">
+                </div>
+                <div class="social-right">
+                    <div class="social-header">
+                        <i class="fa-brands fa-instagram"></i>
+                        <strong>Instagram Visual Hub</strong>
+                    </div>
+                    <span>@AzMeerGroups</span>
+                    <div class="social-desc">High-contrast UI/UX visual renders, behind-the-scenes engineering reels, and corporate brand aesthetics.</div>
+                </div>
+            </a>
+
+            <a href="https://threads.net" target="_blank" class="social-card">
+                <div class="social-left">
+                    <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80" alt="Threads" class="social-real-img">
+                </div>
+                <div class="social-right">
+                    <div class="social-header">
+                        <i class="fa-brands fa-threads"></i>
+                        <strong>Threads Network</strong>
+                    </div>
+                    <span>@AzMeerGroups</span>
+                    <div class="social-desc">Direct text streams, rapid developer micro-blogs, mobile engineering thoughts, and daily tech updates.</div>
+                </div>
+            </a>
+
+            <a href="https://youtube.com" target="_blank" class="social-card">
+                <div class="social-left">
+                    <img src="https://images.unsplash.com/photo-1611162616475-46b635cb6868?auto=format&fit=crop&w=800&q=80" alt="YouTube" class="social-real-img">
+                </div>
+                <div class="social-right">
+                    <div class="social-header">
+                        <i class="fa-brands fa-youtube"></i>
+                        <strong>YouTube Media Channel</strong>
+                    </div>
+                    <span>AzMeer Tech & Media</span>
+                    <div class="social-desc">High-definition video walk-throughs of mobile applications, performance profiling demos, and desktop macro automation tutorials.</div>
+                </div>
+            </a>
+
+            <a href="https://tiktok.com" target="_blank" class="social-card">
+                <div class="social-left">
+                    <img src="https://images.unsplash.com/photo-1596558450255-7c0b7be9d56a?auto=format&fit=crop&w=800&q=80" alt="TikTok" class="social-real-img">
+                </div>
+                <div class="social-right">
+                    <div class="social-header">
+                        <i class="fa-brands fa-tiktok"></i>
+                        <strong>TikTok Media Portal</strong>
+                    </div>
+                    <span>@AzMeerGroups</span>
+                    <div class="social-desc">Short-form tech content, rapid IDE tip videos, Flutter UI tricks, and software development micro-reels.</div>
+                </div>
+            </a>
+
+            <a href="https://fiverr.com" target="_blank" class="social-card">
+                <div class="social-left">
+                    <img src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=800&q=80" alt="Fiverr Storefront" class="social-real-img">
+                </div>
+                <div class="social-right">
+                    <div class="social-header">
+                        <i class="fa-solid fa-store"></i>
+                        <strong>Fiverr Global Storefront</strong>
+                    </div>
+                    <span>Freelance Mobile & Automation Services</span>
+                    <div class="social-desc">Professional marketplace portal offering custom AI app development, mobile UI lag diagnostics, and code optimization services.</div>
+                </div>
+            </a>
+
+            <a href="https://reddit.com" target="_blank" class="social-card">
+                <div class="social-left">
+                    <img src="https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=800&q=80" alt="Reddit" class="social-real-img">
+                </div>
+                <div class="social-right">
+                    <div class="social-header">
+                        <i class="fa-brands fa-reddit"></i>
+                        <strong>Reddit Tech Forums</strong>
+                    </div>
+                    <span>u/AzMeerGroups</span>
+                    <div class="social-desc">Active participation in r/FlutterDev, r/androiddev, and software optimization communities sharing technical solutions.</div>
+                </div>
+            </a>
+
+            <a href="https://medium.com" target="_blank" class="social-card">
+                <div class="social-left">
+                    <img src="https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&w=800&q=80" alt="Medium" class="social-real-img">
+                </div>
+                <div class="social-right">
+                    <div class="social-header">
+                        <i class="fa-brands fa-medium"></i>
+                        <strong>Medium Technical Publication</strong>
+                    </div>
+                    <span>@AzMeerGroups</span>
+                    <div class="social-desc">In-depth technical publications on Android performance tuning, memory leak detection, and serverless web architecture.</div>
+                </div>
+            </a>
+
+            <a href="https://pinterest.com" target="_blank" class="social-card">
+                <div class="social-left">
+                    <img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80" alt="Pinterest" class="social-real-img">
+                </div>
+                <div class="social-right">
+                    <div class="social-header">
+                        <i class="fa-brands fa-pinterest"></i>
+                        <strong>Pinterest Design Boards</strong>
+                    </div>
+                    <span>@AzMeerGroups</span>
+                    <div class="social-desc">Curated design boards featuring high-contrast dark UI components, app mockups, and corporate aesthetic moodboards.</div>
+                </div>
+            </a>
+
+        </div>
+    </section>
+
+    <!-- SECTION 6: INTERACTIVE CLI TERMINAL SIMULATOR -->
+    <section id="cli">
+        <h2 class="section-title">06. Interactive CLI Terminal Console</h2>
+        <div class="terminal-container">
+            <div class="terminal-header">
+                <div class="terminal-buttons">
+                    <div class="t-btn t-red"></div>
+                    <div class="t-btn t-yellow"></div>
+                    <div class="t-btn t-green"></div>
+                </div>
+                <div class="terminal-title">azmeer@system-matrix:~ (zsh)</div>
+                <div><i class="fa-solid fa-terminal"></i></div>
+            </div>
+            <div class="terminal-body" id="terminal-body">
+                <div class="terminal-output">AZ MEER Operating Platform Terminal v2.026
+                    Type 'help' to display available system commands.</div>
+                <div class="terminal-input-line">
+                    <span class="terminal-prompt">azmeer@matrix:~$</span>
+                    <input type="text" class="terminal-input" id="terminal-input" autofocus placeholder="Type command here..." />
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
+
+<footer>
+    <p>&copy; 2026 AZ MEER (SMC-PRIVATE) LIMITED. AzMeer Groups. All Rights Reserved.</p>
+</footer>
+
+<!-- AUTOMATIC HUD NAVIGATION TRACKING SCRIPT -->
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const sections = document.querySelectorAll('section');
+        const navNodes = document.querySelectorAll('.hud-node');
+
+        const observerOptions = {
+            root: null,
+            rootMargin: '-20% 0px -40% 0px',
+            threshold: 0.1
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const currentId = entry.target.getAttribute('id');
+                    
+                    navNodes.forEach(node => {
+                        if (node.getAttribute('data-section') === currentId) {
+                            node.classList.add('active');
+                        } else {
+                            node.classList.remove('active');
+                        }
+                    });
+                }
+            });
+        }, observerOptions);
+
+        sections.forEach(section => observer.observe(section));
+    });
+</script>
+
+<!-- THREE.JS BACKGROUND SCENE SCRIPT -->
+<script>
+    const container = document.getElementById('canvas-container');
+    const scene = new THREE.Scene();
+
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.z = 30;
+
+    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    container.appendChild(renderer.domElement);
+
+    const particleCount = window.innerWidth < 768 ? 250 : 500;
+    const geometry = new THREE.BufferGeometry();
+    const positions = new Float32Array(particleCount * 3);
+    const colors = new Float32Array(particleCount * 3);
+
+    const color1 = new THREE.Color(0x0284c7);
+    const color2 = new THREE.Color(0x8b5cf6);
+
+    for (let i = 0; i < particleCount * 3; i += 3) {
+        positions[i] = (Math.random() - 0.5) * 90;
+        positions[i + 1] = (Math.random() - 0.5) * 90;
+        positions[i + 2] = (Math.random() - 0.5) * 90;
+
+        const mixedColor = color1.clone().lerp(color2, Math.random());
+        colors[i] = mixedColor.r;
+        colors[i + 1] = mixedColor.g;
+        colors[i + 2] = mixedColor.b;
+    }
+
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+    const material = new THREE.PointsMaterial({
+        opacity: 0.45,
+        size: 0.45,
+        transparent: true,
+        vertexColors: true
+    });
+
+    const particleSystem = new THREE.Points(geometry, material);
+    scene.add(particleSystem);
+
+    let mouseX = 0;
+    let mouseY = 0;
+
+    document.addEventListener('mousemove', (event) => {
+        mouseX = (event.clientX / window.innerWidth) - 0.5;
+        mouseY = (event.clientY / window.innerHeight) - 0.5;
+    });
+
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    function animate() {
+        requestAnimationFrame(animate);
+
+        particleSystem.rotation.y += 0.0004;
+        particleSystem.rotation.x += 0.0002;
+
+        camera.position.x += (mouseX * 2 - camera.position.x) * 0.05;
+        camera.position.y += (-mouseY * 2 - camera.position.y) * 0.05;
+        camera.lookAt(scene.position);
+
+        renderer.render(scene, camera);
+    }
+
+    animate();
+</script>
+
+<!-- INTERACTIVE CLI TERMINAL SCRIPT -->
+<script>
+    const terminalInput = document.getElementById('terminal-input');
+    const terminalBody = document.getElementById('terminal-body');
+
+    const commands = {
+        'help': `Available System Commands:
+- help     : List available console options
+- apps     : List live Play Store app deployments
+- repos    : List GitHub repositories
+- ceo      : Show Founder & CEO executive credentials
+- status   : Display SECP & corporate status
+- clear    : Clear terminal screen`,
+        'apps': `Live Play Store Applications:
+1. Grozy Mart (com.grozymart) - Grocery & E-Commerce Platform
+2. Developer Publisher ID: 7792521008004964438`,
+        'repos': `GitHub Repositories (@abdulbasit26Z1):
+- abdulbasit26Z1.github.io
+- TeamAbhPk
+- signal
+- ringcalculator
+- calculatortyx
+- calculator`,
+        'ceo': `Founder & CEO: AZ MEER
+Entity: AZ MEER (SMC-PRIVATE) LIMITED
+Brand: AzMeer Groups
+Education: BSIT (4th Semester, Superior University, Lahore)`,
+        'status': `SECP Registration ID: 20260310_4609622
+FBR Status: Tax Verified
+CDC Equity Credit: Verified Electronic Record`
+    };
+
+    terminalInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            const inputVal = terminalInput.value.trim().toLowerCase();
+            const inputLine = document.createElement('div');
+            inputLine.className = 'terminal-output';
+            inputLine.innerHTML = `<span style="color: var(--accent-cyan);">azmeer@matrix:~$</span> ${terminalInput.value}`;
+            
+            terminalBody.insertBefore(inputLine, terminalInput.parentElement);
+
+            if (inputVal === 'clear') {
+                const outputs = terminalBody.querySelectorAll('.terminal-output');
+                outputs.forEach(out => out.remove());
+            } else if (commands[inputVal]) {
+                const responseLine = document.createElement('div');
+                responseLine.className = 'terminal-output';
+                responseLine.textContent = commands[inputVal];
+                terminalBody.insertBefore(responseLine, terminalInput.parentElement);
+            } else if (inputVal !== '') {
+                const errorLine = document.createElement('div');
+                errorLine.className = 'terminal-output';
+                errorLine.style.color = '#ef4444';
+                errorLine.textContent = `Command not recognized: '${inputVal}'. Type 'help' for options.`;
+                terminalBody.insertBefore(errorLine, terminalInput.parentElement);
+            }
+
+            terminalInput.value = '';
+            terminalBody.scrollTop = terminalBody.scrollHeight;
+        }
+    });
+</script>
+
+</body>
+</html>
