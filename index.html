@@ -1460,7 +1460,7 @@
             entries.forEach(entry => {
                 if (entry.isIntersecting) {
                     const currentId = entry.target.getAttribute('id');
-                    
+
                     navNodes.forEach(node => {
                         if (node.getAttribute('data-section') === currentId) {
                             node.classList.add('active');
@@ -1598,7 +1598,7 @@ CDC Equity Credit: Verified Electronic Record`
             const inputLine = document.createElement('div');
             inputLine.className = 'terminal-output';
             inputLine.innerHTML = `<span style="color: var(--accent-cyan);">azmeer@matrix:~$</span> ${terminalInput.value}`;
-            
+
             terminalBody.insertBefore(inputLine, terminalInput.parentElement);
 
             if (inputVal === 'clear') {
@@ -1625,3 +1625,4 @@ CDC Equity Credit: Verified Electronic Record`
 
 </body>
 </html>
+```[cite: 2]
